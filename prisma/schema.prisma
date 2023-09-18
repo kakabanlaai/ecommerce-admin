@@ -1,0 +1,127 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Store {
+  id         String      @id @default(uuid())
+  name       String
+  userId     String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  billboards Billboard[] @relation("StoreToBillboard")
+  categories Category[]
+  sizes      Size[]      @relation("StoreToSize")
+  colors     Color[]     @relation("StoreToColor")
+  orders     Order[]     @relation("StoreToOrder")
+  products   Product[]   @relation("StoreToProduct")
+}
+
+model Billboard {
+  id         String     @id @default(uuid())
+  storeId    String
+  store      Store      @relation("StoreToBillboard", fields: [storeId], references: [id])
+  label      String
+  imageUrl   String
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  categories Category[]
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String
+  storeId     String
+  store       Store     @relation(fields: [storeId], references: [id])
+  billboardId String
+  billboard   Billboard @relation(fields: [billboardId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[] @relation("CategoryToProduct")
+}
+
+model Size {
+  id        String    @id @default(uuid())
+  storeId   String // Foreign Key to Store
+  store     Store     @relation("StoreToSize", fields: [storeId], references: [id])
+  name      String
+  value     String
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Color {
+  id        String             @id @default(uuid())
+  storeId   String // Foreign Key to Store
+  store     Store              @relation("StoreToColor", fields: [storeId], references: [id])
+  name      String
+  value     String
+  products  ColorsOnProducts[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+}
+
+model Product {
+  id         String             @id @default(uuid())
+  storeId    String // Foreign Key to Store
+  store      Store              @relation("StoreToProduct", fields: [storeId], references: [id])
+  categoryId String // Foreign Key to Category
+  category   Category           @relation("CategoryToProduct", fields: [categoryId], references: [id])
+  name       String
+  price      Decimal
+  isFeatured Boolean            @default(false)
+  isArchived Boolean            @default(false)
+  sizeId     String // Foreign Key to Size
+  size       Size               @relation(fields: [sizeId], references: [id])
+  colors     ColorsOnProducts[]
+  images     Image[] // Relation to Image model
+  orderItems OrderItem[] // Relation to Order model
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+}
+
+model ColorsOnProducts {
+  colorId   String
+  color     Color   @relation(fields: [colorId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@id([colorId, productId])
+}
+
+model Image {
+  id        String   @id @default(uuid())
+  productId String // Foreign Key to Product
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String // URL of the image
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id         String      @id @default(uuid())
+  storeId    String // Foreign Key to Store
+  store      Store       @relation("StoreToOrder", fields: [storeId], references: [id])
+  orderItems OrderItem[] // Relation to OrderItem model
+  isPaid     Boolean     @default(false)
+  phone      String      @default("")
+  address    String      @default("")
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String // Foreign Key to Order
+  order     Order   @relation(fields: [orderId], references: [id])
+  productId String // Foreign Key to Product
+  product   Product @relation(fields: [productId], references: [id])
+}
